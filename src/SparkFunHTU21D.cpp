@@ -27,9 +27,9 @@
 
 #include "SparkFunHTU21D.h"
 
-HTU21D::HTU21D()
+HTU21D::HTU21D(platform_delay_func platform_delay)
 {
-  //Set initial values for private vars
+  _platform_delay = platform_delay;
 }
 
 //Begin
@@ -38,12 +38,12 @@ HTU21D::HTU21D()
 void HTU21D::begin(TwoWire &wirePort)
 {
   _i2cPort = &wirePort; //Grab which port the user wants us to use
-  
+
   _i2cPort->begin();
 }
 
 #define MAX_WAIT 100
-#define DELAY_INTERVAL 10
+#define DELAY_INTERVAL 50
 #define MAX_COUNTER (MAX_WAIT/DELAY_INTERVAL)
 
 //Given a command, reads a given 2-byte value with CRC from the HTU21D
@@ -53,13 +53,13 @@ uint16_t HTU21D::readValue(byte cmd)
   _i2cPort->beginTransmission(HTU21D_ADDRESS);
   _i2cPort->write(cmd); //Measure value (prefer no hold!)
   _i2cPort->endTransmission();
-  
+
   //Hang out while measurement is taken. datasheet says 50ms, practice may call for more
   bool validResult;
   byte counter;
-  for (counter = 0, validResult = 0 ; counter < MAX_COUNTER && !validResult ; counter++)
+  for (counter = 0, validResult = false ; counter < MAX_COUNTER && !validResult ; counter++)
   {
-    delay(DELAY_INTERVAL);
+    _platform_delay(DELAY_INTERVAL);
 
     //Comes back in three bytes, data(MSB) / data(LSB) / Checksum
     validResult = (3 == _i2cPort->requestFrom(HTU21D_ADDRESS, 3));
@@ -87,7 +87,7 @@ uint16_t HTU21D::readValue(byte cmd)
 float HTU21D::readHumidity(void)
 {
   uint16_t rawHumidity = readValue(TRIGGER_HUMD_MEASURE_NOHOLD);
-  
+
   if(rawHumidity == ERROR_I2C_TIMEOUT || rawHumidity == ERROR_BAD_CRC) return(rawHumidity);
 
   //Given the raw humidity data, calculate the actual relative humidity

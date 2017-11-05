@@ -1,17 +1,18 @@
-/* 
+/*
  HTU21D Humidity Sensor Library
  By: Nathan Seidle
  SparkFun Electronics
  Date: September 22nd, 2013
  License: This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
- 
+
  Get humidity and temperature from the HTU21D sensor.
- 
+
  This same library should work for the other similar sensors including the Si
- 
+
  */
- 
-#pragma once
+
+#ifndef __SPARKFUNHTU21D_H__
+#define __SPARKFUNHTU21D_H__
 
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -47,7 +48,9 @@
 class HTU21D {
 
 public:
-  HTU21D();
+  typedef void (*platform_delay_func)(unsigned long milliseconds);
+
+  HTU21D(platform_delay_func _platform_delay = delay);
 
   //Public Functions
   void begin(TwoWire &wirePort = Wire); //If user doesn't specificy then Wire will be used
@@ -63,10 +66,12 @@ public:
 private:
   //Private Functions
   TwoWire *_i2cPort; //The generic connection to user's chosen I2C hardware
-
+  platform_delay_func _platform_delay;
   byte checkCRC(uint16_t message_from_sensor, uint8_t check_value_from_sensor);
   uint16_t readValue(byte cmd);
 
   //Private Variables
 
 };
+
+#endif // __SPARKFUNHTU21D_H__
